@@ -16,10 +16,12 @@ public:
 
     ~ComPortDriver();
 
-    std::vector<char> read_data();
-    std::vector<char> read_data(bool wait_for_end_of_line);
+    std::vector<u_char> read_data();
+    std::vector<u_char> read_data(bool wait_for_end_of_line);
+    std::vector<u_char> read_data(int number_of_bytes);
+    void flush_input();
 
-    int send_data(std::vector<char> data);
+    int send_data(std::vector<u_char> data);
 
     bool is_port_opened(){return port_opened;};
 private:

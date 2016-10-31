@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(roboclaw_driver)
-set(CMAKE_CXX_STANDARD 11)
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+##set(CMAKE_CXX_STANDARD 11)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
 )
@@ -43,7 +44,7 @@ include_directories(
 # add_dependencies(roboclaw_driver ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
-add_executable(roboclaw_driver_node src/roboclaw_driver_node.cpp src/ComPortDriver.cpp src/rs232.c)
+add_executable(roboclaw_driver_node src/roboclaw_driver_node.cpp src/ComPortDriver.cpp src/rs232.c src/Roboclaw.cpp src/Roboclaw.h)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above

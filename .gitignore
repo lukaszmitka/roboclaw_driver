@@ -51,4 +51,5 @@ CATKIN_IGNORE
 .idea/*.xml
 .idea/*.iml
 
+src/send.sh
 src/notatki
