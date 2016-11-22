@@ -4,7 +4,7 @@
 
 #include "Roboclaw.h"
 
-Roboclaw::Roboclaw(u_char address, int port_number, uint16_t pulses_per_meter) {
+Roboclaw::Roboclaw(u_char address, int port_number, uint32_t pulses_per_meter) {
    ppm = pulses_per_meter;
    //std::cout << "Get ComPortDriver" << std::endl;
    comPortDriver = new ComPortDriver(port_number);
@@ -64,10 +64,10 @@ void Roboclaw::add_crc() {
    l_data.push_back(crc_l);
 }
 
-bool Roboclaw::set_speed(float left_motor, float right_motor) {
+bool Roboclaw::set_speed(double left_motor, double right_motor) {
    //std::cout << "target spd[m/s] = " << left_motor << ", " << right_motor;
-   left_target_pps = (int16_t) ((left_motor) * ppm);
-   right_target_pps = (int16_t) ((right_motor) * ppm);
+   left_target_pps = (int32_t) ((left_motor) * ppm);
+   right_target_pps = (int32_t) ((right_motor) * ppm);
    //std::cout << "target spd [pps]= " << left_target_pps << ", " << right_target_pps << std::endl;
    driveM1SignedSpeed(left_target_pps);
    driveM2SignedSpeed(right_target_pps);

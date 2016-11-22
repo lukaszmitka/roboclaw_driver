@@ -5,33 +5,35 @@
 #include "roboclaw_driver_node.h"
 
 int port_num = 16; // /dev/ttyUSB0
+//int port_num = 0; // /dev/ttyS0
 int roboclaw_address = 0x80;
 long encoder1, encoder2;
 Roboclaw *roboclaw;
 ros::Rate *freq;
-int update_frequency = 50;
+int update_frequency = 10;
 ros::Publisher odometry_publisher;
 ros::Subscriber velocity_subscriber;
 float robot_width = 0.3; // meters
 float wheel_radius = 0.05; // meters
-u_int16_t ticks_per_rev = 33000;
+u_int32_t ticks_per_rev = 132000; // 33000 - antrobot
+//u_int16_t ticks_per_rev = 300; // 300 - pololu
 double rad_per_tick;
 double wheel_dst = 0;
 double rev_per_meter = 0;
-uint16_t pulses_per_meter = 0;
-float left_spd;
-float right_spd;
+uint32_t pulses_per_meter = 0;
+double left_spd;
+double right_spd;
 double w1_angle[] = {0, 0}, w2_angle[] = {0, 0}; // [0] - current, [1] - previous
 double w1_spd = 0, w2_spd = 0; // angular velocity
 double robot_angle[] = {0, 0}; // [0] - current, [1] - previous
 double robot_ang_vel = 0; // angular velocity
 double robot_pos_x = 0, robot_pos_y = 0;
 double robot_vel_x[] = {0, 0}, robot_vel_y[] = {0, 0};
+std::string base_frame_name;
 
 void velocityCallback(const geometry_msgs::TwistConstPtr &msg) {
-   left_spd = msg->linear.x - (msg->angular.z * 0.5 * robot_width);
-   right_spd = msg->linear.x + (msg->angular.z * 0.5 * robot_width);
-   roboclaw->set_speed(left_spd, right_spd);
+   left_spd = 0.01 * (msg->linear.x - (msg->angular.z * 2 * robot_width));
+   right_spd = 0.01 * (msg->linear.x + (msg->angular.z * 2 * robot_width));
 }
 
 int main(int argc, char **argv) {
@@ -39,17 +41,32 @@ int main(int argc, char **argv) {
    ros::init(argc, argv, "roboclaw_driver");
 
    //std::cout << "Get node handle" << std::endl;
-   ros::NodeHandle n("roboclaw_driver");
+   ros::NodeHandle n("~");
+
+   n.param<std::string>("base_frame", base_frame_name, "roboclaw");
+
+   if (n.getParam("base_frame", base_frame_name)) {
+      std::cout << "Base frame: " << base_frame_name << std::endl;
+   } else {
+      std::cout << "Use default base frame: " << base_frame_name << std::endl;
+   }
+
+   static tf::TransformBroadcaster br;
+   tf::StampedTransform transform;
+   tf::Quaternion quaternion;
+
+   transform.child_frame_id_ = base_frame_name;
+   transform.frame_id_ = "world";
 
    //std::cout << "Calc rad_per_tick" << std::endl;
    rad_per_tick = 2 * PI / (double) ticks_per_rev;
    wheel_dst = 2 * PI * wheel_radius;
    rev_per_meter = 1.0 / wheel_dst;
-   pulses_per_meter = (uint16_t) rev_per_meter * ticks_per_rev;
+   pulses_per_meter = rev_per_meter * ticks_per_rev;
 
    roboclaw = new Roboclaw(roboclaw_address, port_num, pulses_per_meter);
 
-   if (roboclaw->has_acces_to_ComPort()){
+   if (roboclaw->has_acces_to_ComPort()) {
       std::cout << "Roboclaw instance obtained access to ComPort" << std::endl;
    } else {
       std::cout << "Can not get access to ComPort, closing" << std::endl;
@@ -66,9 +83,12 @@ int main(int argc, char **argv) {
    freq = new ros::Rate(update_frequency);
    std::cout << "Roboclaw started" << std::endl;
 
+
    while (ros::ok()) {
+      roboclaw->set_speed(left_spd, right_spd);
+      std::cout << "Set spd L: " << left_spd << " Set spd R: " << right_spd;
       roboclaw->read_encoders(&encoder1, &encoder2);
-      //std::cout << "Enc1: " << encoder1 << " Enc2: " << encoder2;
+      std::cout << "Enc1: " << encoder1 << " Enc2: " << encoder2;
 
       // update wheel angles based on encoder reads
       w1_angle[1] = w1_angle[0];
@@ -92,7 +112,7 @@ int main(int argc, char **argv) {
       robot_pos_x = robot_pos_x + (0.5 * (robot_vel_x[0] + robot_vel_x[1]) / update_frequency);
       robot_pos_y = robot_pos_y + (0.5 * (robot_vel_y[0] + robot_vel_y[1]) / update_frequency);
 
-      //std::cout << std::endl;
+      std::cout << std::endl;
       nav_msgs::Odometry odometry;
       tf::Vector3 vector(0, 0, 1);
       tf::Quaternion quat(vector, robot_angle[0]);
@@ -105,8 +125,16 @@ int main(int argc, char **argv) {
       odometry.pose.pose.orientation.z = quat.z();
       odometry.pose.pose.orientation.w = quat.w();
       odometry.header.frame_id = "world";
-      odometry.child_frame_id = "roboclaw";
+      odometry.child_frame_id = base_frame_name;
       odometry_publisher.publish(odometry);
+
+      transform.setOrigin(tf::Vector3(robot_pos_x, robot_pos_y, 0.0));
+      transform.stamp_ = ros::Time::now();
+
+      tf::Quaternion q;
+      q.setRPY(0, 0, robot_angle[0]);
+      transform.setRotation(q);
+      br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "world", base_frame_name));
 
       ros::spinOnce();
       freq->sleep();

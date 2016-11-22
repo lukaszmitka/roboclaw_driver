@@ -16,7 +16,7 @@ public:
     /**
      * Left motor is to be connected to M1 output on Roboclaw board
      */
-    Roboclaw(u_char address, int port_number, uint16_t pulses_per_meter);
+    Roboclaw(u_char address, int port_number, uint32_t pulses_per_meter);
 
     ~Roboclaw();
 
@@ -28,9 +28,9 @@ private:
     //int com_port_number;
     ComPortDriver *comPortDriver;
     uint16_t crc;
-    uint16_t ppm; // encoder pulses per meter
-    int16_t left_target_pps = 0; // target pulses per second for left wheel
-    int16_t right_target_pps = 0; // target pulses per second for right wheel
+    uint32_t ppm; // encoder pulses per meter
+    int32_t left_target_pps = 0; // target pulses per second for left wheel
+    int32_t right_target_pps = 0; // target pulses per second for right wheel
     u_char tmp;
 
     // functions
@@ -42,7 +42,7 @@ public:
      * left_motor - desired left wheel linear speed in meters per second
      * right_motor - desired right wheel linear speed in meters per second
      */
-    bool set_speed(float left_motor, float right_motor);
+    bool set_speed(double left_motor, double right_motor);
 
     void clear_crc();
 
