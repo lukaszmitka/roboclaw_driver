@@ -14,7 +14,6 @@
 #include <string>
 #include <vector>
 
-#include "ComPortDriver.h"
 #include "ros/ros.h"
 #include <tf/transform_datatypes.h>
 #include <tf/transform_broadcaster.h>

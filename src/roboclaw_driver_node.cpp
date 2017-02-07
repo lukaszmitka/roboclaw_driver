@@ -5,12 +5,13 @@
 #include "roboclaw_driver_node.h"
 
 int port_num = 16; // /dev/ttyUSB0
+//int port_num = 17; // /dev/ttyUSB1
 //int port_num = 0; // /dev/ttyS0
 int roboclaw_address = 0x80;
 long encoder1, encoder2;
 Roboclaw *roboclaw;
 ros::Rate *freq;
-int update_frequency = 10;
+int update_frequency = 50;
 ros::Publisher odometry_publisher;
 ros::Subscriber velocity_subscriber;
 float robot_width = 0.3; // meters
@@ -32,8 +33,10 @@ double robot_vel_x[] = {0, 0}, robot_vel_y[] = {0, 0};
 std::string base_frame_name;
 
 void velocityCallback(const geometry_msgs::TwistConstPtr &msg) {
-   left_spd = 0.01 * (msg->linear.x - (msg->angular.z * 2 * robot_width));
-   right_spd = 0.01 * (msg->linear.x + (msg->angular.z * 2 * robot_width));
+   double lin = msg->linear.x;
+   double ang = msg->angular.z;
+   left_spd = (0.1 * lin - (0.05 * ang + ang * 0.1 * abs(lin)));
+   right_spd = (0.1 * lin + (0.05 * ang + ang * 0.1 * abs(lin)));
 }
 
 int main(int argc, char **argv) {
@@ -64,14 +67,16 @@ int main(int argc, char **argv) {
    rev_per_meter = 1.0 / wheel_dst;
    pulses_per_meter = rev_per_meter * ticks_per_rev;
 
-   roboclaw = new Roboclaw(roboclaw_address, port_num, pulses_per_meter);
+   //roboclaw = new Roboclaw(roboclaw_address, port_num, pulses_per_meter);
+   roboclaw = new Roboclaw(roboclaw_address, "/dev/ttyUSB0", pulses_per_meter, 1000);
 
+   /*std::cout << "Trying to access ComPort" << std::endl;
    if (roboclaw->has_acces_to_ComPort()) {
-      std::cout << "Roboclaw instance obtained access to ComPort" << std::endl;
+      //std::cout << "Roboclaw instance obtained access to ComPort" << std::endl;
    } else {
-      std::cout << "Can not get access to ComPort, closing" << std::endl;
+      //std::cout << "Can not get access to ComPort, closing" << std::endl;
       return 0;
-   }
+   }*/
 
    //std::cout << "odom publisher" << std::endl;
    odometry_publisher = n.advertise<nav_msgs::Odometry>("odom", 1);
@@ -85,11 +90,17 @@ int main(int argc, char **argv) {
 
 
    while (ros::ok()) {
-      roboclaw->set_speed(left_spd, right_spd);
-      std::cout << "Set spd L: " << left_spd << " Set spd R: " << right_spd;
-      roboclaw->read_encoders(&encoder1, &encoder2);
-      std::cout << "Enc1: " << encoder1 << " Enc2: " << encoder2;
+      if (roboclaw->set_speed(left_spd, right_spd)) {
+         std::cout << "Set spd L: " << left_spd << " Set spd R: " << right_spd;
+      } else {
+         std::cout << "Set speed communication ERROR ";
+      }
 
+      if (roboclaw->read_encoders(&encoder1, &encoder2)) {
+         std::cout << "Enc1: " << encoder1 << " Enc2: " << encoder2;
+      } else {
+         std::cout << "read_encoders communication ERROR ";
+      }
       // update wheel angles based on encoder reads
       w1_angle[1] = w1_angle[0];
       w2_angle[1] = w2_angle[0];
