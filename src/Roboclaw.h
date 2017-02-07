@@ -83,6 +83,8 @@ public:
      */
     bool set_speed(double left_motor, double right_motor);
 
+    bool set_speed_with_accel(double left_motor, double right_motor, uint32_t accel);
+
     void clear_crc();
 
     void add_crc();
@@ -95,6 +97,10 @@ private:
     bool driveM1SignedSpeed(int32_t speed);
 
     bool driveM2SignedSpeed(int32_t speed);
+
+    bool driveM1SignedSpeedAccel(int32_t speed, uint32_t accel);
+
+    bool driveM2SignedSpeedAccel(int32_t speed, uint32_t accel);
 
     bool read_version();
 

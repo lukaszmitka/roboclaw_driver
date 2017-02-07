@@ -112,6 +112,18 @@ bool Roboclaw::set_speed(double left_motor, double right_motor) {
    }
 }
 
+bool Roboclaw::set_speed_with_accel(double left_motor, double right_motor, uint32_t accel) {
+   left_target_pps = (int32_t) ((left_motor) * ppm);
+   right_target_pps = (int32_t) ((right_motor) * ppm);
+   //std::cout << "target spd [pps]= " << left_target_pps << ", " << right_target_pps << std::endl;
+   if (driveM2SignedSpeedAccel(right_target_pps, accel) && driveM1SignedSpeedAccel
+         (left_target_pps, accel)) {
+      return true;
+   } else {
+      return false;
+   }
+}
+
 bool Roboclaw::driveM1SignedSpeed(int32_t speed) {
    clear_crc();
    crc = add_byte(crc, device_address); // address
@@ -158,7 +170,68 @@ bool Roboclaw::driveM2SignedSpeed(int32_t speed) {
    }
 }
 
-//TODO - impelment commands 38,39 - speed with limited acceleration
+
+bool Roboclaw::driveM1SignedSpeedAccel(int32_t speed, uint32_t accel) {
+   clear_crc();
+   crc = add_byte(crc, device_address); // address
+   crc = add_byte(crc, COM_DRV_M1_SIGNED_SPD_ACCEL); //command Drive M1 With Signed Speed
+   // 8 bytes of data
+   //acceleration
+   tmp = (accel >> 24) & 0xFF;
+   crc = add_byte(crc, tmp);
+   tmp = (accel >> 16) & 0xFF;
+   crc = add_byte(crc, tmp);
+   tmp = (accel >> 8) & 0xFF;
+   crc = add_byte(crc, tmp);
+   tmp = (accel >> 0) & 0xFF;
+   crc = add_byte(crc, tmp);
+   // speed
+   tmp = (speed >> 24) & 0xFF;
+   crc = add_byte(crc, tmp);
+   tmp = (speed >> 16) & 0xFF;
+   crc = add_byte(crc, tmp);
+   tmp = (speed >> 8) & 0xFF;
+   crc = add_byte(crc, tmp);
+   tmp = (speed >> 0) & 0xFF;
+   crc = add_byte(crc, tmp);
+   add_crc();
+   if (execute_command(l_data)) {
+      return true;
+   } else {
+      return false;
+   }
+}
+
+bool Roboclaw::driveM2SignedSpeedAccel(int32_t speed, uint32_t accel) {
+   clear_crc();
+   crc = add_byte(crc, device_address); // address
+   crc = add_byte(crc, COM_DRV_M2_SIGNED_SPD_ACCEL); //command Drive M1 With Signed Speed
+   // 8 bytes of data
+   //acceleration
+   tmp = (accel >> 24) & 0xFF;
+   crc = add_byte(crc, tmp);
+   tmp = (accel >> 16) & 0xFF;
+   crc = add_byte(crc, tmp);
+   tmp = (accel >> 8) & 0xFF;
+   crc = add_byte(crc, tmp);
+   tmp = (accel >> 0) & 0xFF;
+   crc = add_byte(crc, tmp);
+   // speed
+   tmp = (speed >> 24) & 0xFF;
+   crc = add_byte(crc, tmp);
+   tmp = (speed >> 16) & 0xFF;
+   crc = add_byte(crc, tmp);
+   tmp = (speed >> 8) & 0xFF;
+   crc = add_byte(crc, tmp);
+   tmp = (speed >> 0) & 0xFF;
+   crc = add_byte(crc, tmp);
+   add_crc();
+   if (execute_command(l_data)) {
+      return true;
+   } else {
+      return false;
+   }
+}
 
 bool Roboclaw::read_version() {
    return read_version(false);

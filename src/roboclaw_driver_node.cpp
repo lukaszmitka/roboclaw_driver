@@ -90,7 +90,8 @@ int main(int argc, char **argv) {
 
 
    while (ros::ok()) {
-      if (roboclaw->set_speed(left_spd, right_spd)) {
+      //if (roboclaw->set_speed(left_spd, right_spd)) {
+      if (roboclaw->set_speed_with_accel(left_spd, right_spd, 25000)) {
          std::cout << "Set spd L: " << left_spd << " Set spd R: " << right_spd;
       } else {
          std::cout << "Set speed communication ERROR ";
