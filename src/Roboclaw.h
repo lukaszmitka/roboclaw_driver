@@ -5,7 +5,7 @@
 #ifndef ROBOCLAW_DRIVER_ROBOCLAW_H
 #define ROBOCLAW_DRIVER_ROBOCLAW_H
 
-#define REPLY_SIZE_ACK -1
+#define REPLY_SIZE_ACK 1
 
 #define COM_READ_VERSION 21
 #define COM_READ_VERSION_REPLY_SIZE 50
@@ -97,7 +97,10 @@ private:
     bool driveM2SignedSpeed(int32_t speed);
 
     bool read_version();
+
     bool read_version(bool print_version);
+
+    bool reset_encoder_counters();
 
     uint16_t crc_update(uint16_t crc_val, u_char byte);
 

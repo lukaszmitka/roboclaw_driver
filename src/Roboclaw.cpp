@@ -13,6 +13,7 @@ Roboclaw::Roboclaw(u_char address, std::string port, uint32_t pulses_per_meter, 
       device_address = address;
       std::cout << "Read roboclaw version" << std::endl;
       read_version(true);
+      reset_encoder_counters();
    } else {
       comPort_opened = false;
       std::cout << "Can not access comport" << std::endl;
@@ -190,6 +191,18 @@ bool Roboclaw::read_version(bool print_version) {
       return false;
    }
    return true;
+}
+
+bool Roboclaw::reset_encoder_counters() {
+   clear_crc();
+   crc = add_byte(crc, device_address); // address
+   crc = add_byte(crc, COM_RESET_ENCODERS); //command Drive M1 With Signed Speed
+   add_crc();
+   if (execute_command(l_data)) {
+      return true;
+   } else {
+      return false;
+   }
 }
 
 bool Roboclaw::read_encoders(long *enc1, long *enc2) {
