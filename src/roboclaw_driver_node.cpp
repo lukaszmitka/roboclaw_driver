@@ -4,10 +4,7 @@
 
 #include "roboclaw_driver_node.h"
 
-int port_num = 16; // /dev/ttyUSB0
-//int port_num = 17; // /dev/ttyUSB1
-//int port_num = 0; // /dev/ttyS0
-int roboclaw_address = 0x80;
+u_char roboclaw_address = 0x80;
 long encoder1, encoder2;
 Roboclaw *roboclaw;
 ros::Rate *freq;
@@ -16,14 +13,14 @@ ros::Publisher odometry_publisher;
 ros::Subscriber velocity_subscriber;
 float robot_width = 0.3; // meters
 float wheel_radius = 0.05; // meters
-u_int32_t ticks_per_rev = 132000; // 33000 - antrobot
-//u_int16_t ticks_per_rev = 300; // 300 - pololu
+int32_t ticks_per_rev = 0; // 33000 - antrobot
 double rad_per_tick;
 double wheel_dst = 0;
 double rev_per_meter = 0;
 uint32_t pulses_per_meter = 0;
-double left_spd;
-double right_spd;
+double left_spd; // desired left wheel speed [m/s]
+double right_spd; // desired right wheel speed [m/s]
+double accel_limit; // desired wheel acceleration [m/s^2]
 double w1_angle[] = {0, 0}, w2_angle[] = {0, 0}; // [0] - current, [1] - previous
 double w1_spd = 0, w2_spd = 0; // angular velocity
 double robot_angle[] = {0, 0}; // [0] - current, [1] - previous
@@ -35,8 +32,11 @@ std::string base_frame_name;
 void velocityCallback(const geometry_msgs::TwistConstPtr &msg) {
    double lin = msg->linear.x;
    double ang = msg->angular.z;
-   left_spd = (0.1 * lin - (0.05 * ang + ang * 0.1 * abs(lin)));
-   right_spd = (0.1 * lin + (0.05 * ang + ang * 0.1 * abs(lin)));
+   left_spd = lin - ang * 0.5 * robot_width;
+   right_spd = lin + ang * 0.5 * robot_width;
+
+   //left_spd = (0.1 * lin - (0.05 * ang + ang * 0.1 * abs(lin)));
+   //right_spd = (0.1 * lin + (0.05 * ang + ang * 0.1 * abs(lin)));
 }
 
 int main(int argc, char **argv) {
@@ -48,11 +48,21 @@ int main(int argc, char **argv) {
 
    n.param<std::string>("base_frame", base_frame_name, "roboclaw");
 
-   if (n.getParam("base_frame", base_frame_name)) {
+   /*if (n.getParam("base_frame", base_frame_name)) {
       std::cout << "Base frame: " << base_frame_name << std::endl;
    } else {
       std::cout << "Use default base frame: " << base_frame_name << std::endl;
-   }
+   }*/
+
+   n.param<int32_t>("encoder_res", ticks_per_rev, 132000);
+
+   /*if (n.getParam("encoder_res", ticks_per_rev)) {
+      std::cout << "Base frame: " << ticks_per_rev << std::endl;
+   } else {
+      std::cout << "Use default base frame: " << ticks_per_rev << std::endl;
+   }*/
+
+   n.param<double>("acceleration_limit", accel_limit, 0.1);
 
    static tf::TransformBroadcaster br;
    tf::StampedTransform transform;
@@ -65,18 +75,9 @@ int main(int argc, char **argv) {
    rad_per_tick = 2 * PI / (double) ticks_per_rev;
    wheel_dst = 2 * PI * wheel_radius;
    rev_per_meter = 1.0 / wheel_dst;
-   pulses_per_meter = rev_per_meter * ticks_per_rev;
+   pulses_per_meter = (uint32_t)rev_per_meter * ticks_per_rev;
 
-   //roboclaw = new Roboclaw(roboclaw_address, port_num, pulses_per_meter);
    roboclaw = new Roboclaw(roboclaw_address, "/dev/ttyUSB0", pulses_per_meter, 1000);
-
-   /*std::cout << "Trying to access ComPort" << std::endl;
-   if (roboclaw->has_acces_to_ComPort()) {
-      //std::cout << "Roboclaw instance obtained access to ComPort" << std::endl;
-   } else {
-      //std::cout << "Can not get access to ComPort, closing" << std::endl;
-      return 0;
-   }*/
 
    //std::cout << "odom publisher" << std::endl;
    odometry_publisher = n.advertise<nav_msgs::Odometry>("odom", 1);
@@ -88,10 +89,9 @@ int main(int argc, char **argv) {
    freq = new ros::Rate(update_frequency);
    std::cout << "Roboclaw started" << std::endl;
 
-
    while (ros::ok()) {
       //if (roboclaw->set_speed(left_spd, right_spd)) {
-      if (roboclaw->set_speed_with_accel(left_spd, right_spd, 25000)) {
+      if (roboclaw->set_speed_with_accel(left_spd, right_spd, accel_limit)) {
          std::cout << "Set spd L: " << left_spd << " Set spd R: " << right_spd;
       } else {
          std::cout << "Set speed communication ERROR ";

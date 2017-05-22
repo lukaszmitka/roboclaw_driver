@@ -69,6 +69,7 @@ private:
     uint32_t ppm; // encoder pulses per meter
     int64_t left_target_pps = 0; // target pulses per second for left wheel
     int64_t right_target_pps = 0; // target pulses per second for right wheel
+    uint32_t accel_limit =0; // acceleration limit for both wheels in pulses/s^2
     u_char tmp;
 
     // functions
@@ -78,12 +79,21 @@ public:
     bool has_acces_to_ComPort();
 
     /**
-     * left_motor - desired left wheel linear speed in meters per second
-     * right_motor - desired right wheel linear speed in meters per second
+     *
+     * @param left_motor - desired left wheel linear speed in meters per second
+     * @param right_motor - desired right wheel linear speed in meters per second
+     * @return
      */
     bool set_speed(double left_motor, double right_motor);
 
-    bool set_speed_with_accel(double left_motor, double right_motor, uint32_t accel);
+    /**
+     *
+     * @param left_motor - desired left wheel linear speed in meters per second
+     * @param right_motor - desired right wheel linear speed in meters per second
+     * @param accel - desired linear acceleration for both wheels [m/s^2]
+     * @return
+     */
+    bool set_speed_with_accel(double left_motor, double right_motor, double accel);
 
     void clear_crc();
 

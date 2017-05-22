@@ -112,12 +112,13 @@ bool Roboclaw::set_speed(double left_motor, double right_motor) {
    }
 }
 
-bool Roboclaw::set_speed_with_accel(double left_motor, double right_motor, uint32_t accel) {
+bool Roboclaw::set_speed_with_accel(double left_motor, double right_motor, double accel) {
    left_target_pps = (int32_t) ((left_motor) * ppm);
    right_target_pps = (int32_t) ((right_motor) * ppm);
+   accel_limit = (uint32_t) ((accel) * ppm);
    //std::cout << "target spd [pps]= " << left_target_pps << ", " << right_target_pps << std::endl;
-   if (driveM2SignedSpeedAccel(right_target_pps, accel) && driveM1SignedSpeedAccel
-         (left_target_pps, accel)) {
+   if (driveM2SignedSpeedAccel(right_target_pps, accel_limit) && driveM1SignedSpeedAccel
+           (left_target_pps, accel_limit)) {
       return true;
    } else {
       return false;
@@ -205,7 +206,7 @@ bool Roboclaw::driveM1SignedSpeedAccel(int32_t speed, uint32_t accel) {
 bool Roboclaw::driveM2SignedSpeedAccel(int32_t speed, uint32_t accel) {
    clear_crc();
    crc = add_byte(crc, device_address); // address
-   crc = add_byte(crc, COM_DRV_M2_SIGNED_SPD_ACCEL); //command Drive M1 With Signed Speed
+   crc = add_byte(crc, COM_DRV_M2_SIGNED_SPD_ACCEL); //command Drive M2 With Signed Speed
    // 8 bytes of data
    //acceleration
    tmp = (accel >> 24) & 0xFF;
@@ -285,12 +286,12 @@ bool Roboclaw::read_encoders(long *enc1, long *enc2) {
                        COM_READ_ENCODER_COUNTERS_REPLY_SIZE, response)) {
       //if (response.size() > 8) {
       unsigned long encoder_1 =
-            ((u_char) response[0]) << 24 | ((u_char) response[1] << 16) | ((u_char)
-                  response[2]) << 8 | ((u_char) response[3]);
+              ((u_char) response[0]) << 24 | ((u_char) response[1] << 16) | ((u_char)
+                      response[2]) << 8 | ((u_char) response[3]);
       *enc1 = encoder_1;
       unsigned long encoder_2 =
-            ((u_char) response[4]) << 24 | ((u_char) response[5] << 16) | ((u_char)
-                  response[6]) << 8 | ((u_char) response[7]);
+              ((u_char) response[4]) << 24 | ((u_char) response[5] << 16) | ((u_char)
+                      response[6]) << 8 | ((u_char) response[7]);
       *enc2 = encoder_2;
       //}
    } else {
