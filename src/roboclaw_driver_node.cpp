@@ -28,6 +28,7 @@ double robot_ang_vel = 0; // angular velocity
 double robot_pos_x = 0, robot_pos_y = 0;
 double robot_vel_x[] = {0, 0}, robot_vel_y[] = {0, 0};
 std::string base_frame_name;
+std::string port_name;
 
 void velocityCallback(const geometry_msgs::TwistConstPtr &msg) {
    double lin = msg->linear.x;
@@ -64,6 +65,8 @@ int main(int argc, char **argv) {
 
    n.param<double>("acceleration_limit", accel_limit, 0.1);
 
+   n.param<std::string>("port", port_name, "/dev/ttyUSB0");
+
    static tf::TransformBroadcaster br;
    tf::StampedTransform transform;
    tf::Quaternion quaternion;
@@ -75,9 +78,9 @@ int main(int argc, char **argv) {
    rad_per_tick = 2 * PI / (double) ticks_per_rev;
    wheel_dst = 2 * PI * wheel_radius;
    rev_per_meter = 1.0 / wheel_dst;
-   pulses_per_meter = (uint32_t)rev_per_meter * ticks_per_rev;
+   pulses_per_meter = (uint32_t) rev_per_meter * ticks_per_rev;
 
-   roboclaw = new Roboclaw(roboclaw_address, "/dev/ttyUSB0", pulses_per_meter, 1000);
+   roboclaw = new Roboclaw(roboclaw_address, port_name, pulses_per_meter, 1000);
 
    //std::cout << "odom publisher" << std::endl;
    odometry_publisher = n.advertise<nav_msgs::Odometry>("odom", 1);
@@ -118,9 +121,9 @@ int main(int argc, char **argv) {
       robot_vel_x[1] = robot_vel_x[0];
       robot_vel_y[1] = robot_vel_y[0];
       robot_vel_x[0] = ((w2_spd * wheel_radius) + (robot_ang_vel * robot_width * 0.5)) * cos
-            (robot_angle[0]);
+              (robot_angle[0]);
       robot_vel_y[0] = ((w2_spd * wheel_radius) + (robot_ang_vel * robot_width * 0.5)) * sin
-            (robot_angle[0]);
+              (robot_angle[0]);
       robot_pos_x = robot_pos_x + (0.5 * (robot_vel_x[0] + robot_vel_x[1]) / update_frequency);
       robot_pos_y = robot_pos_y + (0.5 * (robot_vel_y[0] + robot_vel_y[1]) / update_frequency);
 

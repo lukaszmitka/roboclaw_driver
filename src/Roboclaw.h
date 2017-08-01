@@ -51,7 +51,7 @@ public:
     /**
      * Left motor is to be connected to M1 output on Roboclaw board
      */
-    Roboclaw(u_char address, int port_number, uint32_t pulses_per_meter);
+    //Roboclaw(u_char address, int port_number, uint32_t pulses_per_meter);
 
     Roboclaw(u_char address, std::string port, uint32_t pulses_per_meter, uint16_t timeout);
 
